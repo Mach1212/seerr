@@ -6,6 +6,7 @@ import SlideOver from '@app/components/Common/SlideOver';
 import Tooltip from '@app/components/Common/Tooltip';
 import DownloadBlock from '@app/components/DownloadBlock';
 import IssueBlock from '@app/components/IssueBlock';
+import ReleaseList from '@app/components/ManageSlideOver/ReleaseList';
 import RequestBlock from '@app/components/RequestBlock';
 import useSettings from '@app/hooks/useSettings';
 import useToasts from '@app/hooks/useToasts';
@@ -54,6 +55,8 @@ const messages = defineMessages('components.ManageSlideOver', {
   manageModalRequests: 'Requests',
   manageModalMedia: 'Media',
   manageModalMedia4k: '4K Media',
+  manageModalReleases: 'Releases',
+  manageModalReleases4k: '4K Releases',
   manageModalAdvanced: 'Advanced',
   manageModalNoRequests: 'No requests.',
   manageModalClearMedia: 'Clear Data',
@@ -231,6 +234,11 @@ const ManageSlideOver = ({
     data.mediaInfo?.issues?.filter(
       (issue) => issue.status === IssueStatus.OPEN
     ) ?? [];
+
+  const releaseSeasons =
+    mediaType === 'tv'
+      ? data.seasons.filter((season) => season.seasonNumber !== 0)
+      : undefined;
 
   const styledPlayCount = (playCount: number): JSX.Element => {
     return (
@@ -512,6 +520,19 @@ const ManageSlideOver = ({
               </div>
             </div>
           )}
+        {hasPermission(Permission.ADMIN) && data.mediaInfo?.serviceUrl && (
+          <div>
+            <h3 className="mb-2 text-xl font-bold">
+              {intl.formatMessage(messages.manageModalReleases)}
+            </h3>
+            <ReleaseList
+              mediaId={data.mediaInfo.id}
+              mediaType={mediaType}
+              seasons={releaseSeasons}
+              onGrabbed={() => revalidate()}
+            />
+          </div>
+        )}
         {hasPermission(Permission.ADMIN) &&
           (data.mediaInfo?.serviceUrl4k ||
             data.mediaInfo?.tautulliUrl4k ||
@@ -673,6 +694,20 @@ const ManageSlideOver = ({
               </div>
             </div>
           )}
+        {hasPermission(Permission.ADMIN) && data.mediaInfo?.serviceUrl4k && (
+          <div>
+            <h3 className="mb-2 text-xl font-bold">
+              {intl.formatMessage(messages.manageModalReleases4k)}
+            </h3>
+            <ReleaseList
+              mediaId={data.mediaInfo.id}
+              mediaType={mediaType}
+              is4k
+              seasons={releaseSeasons}
+              onGrabbed={() => revalidate()}
+            />
+          </div>
+        )}
         {hasPermission(Permission.ADMIN) &&
           data?.mediaInfo &&
           data.mediaInfo.status !== MediaStatus.BLOCKLISTED && (

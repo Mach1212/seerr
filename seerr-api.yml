@@ -1408,6 +1408,80 @@ components:
         name:
           type: string
           example: 720p/1080p
+    ArrRelease:
+      type: object
+      properties:
+        guid:
+          type: string
+          example: 3fbd3265c069d8db1d0e
+        indexerId:
+          type: number
+          example: 1
+        indexer:
+          type: string
+          example: barbossa
+        title:
+          type: string
+          example: Tron.1982.1080p.BluRay-MoviesMod
+        size:
+          type: number
+          description: Bytes, 0 when the indexer gives no size
+          example: 2426656522
+        ageHours:
+          type: number
+          example: 2.5
+        quality:
+          type: string
+          example: Bluray-1080p
+        resolution:
+          type: number
+          example: 1080
+        customFormats:
+          type: array
+          items:
+            type: string
+          example: [DV, HDR10]
+        customFormatScore:
+          type: number
+          example: 0
+        languages:
+          type: array
+          items:
+            type: string
+          example: [English]
+        rejected:
+          type: boolean
+          description: Radarr or Sonarr would not grab it on its own; it can still be grabbed
+          example: false
+        rejections:
+          type: array
+          items:
+            type: string
+        fullSeason:
+          type: boolean
+          description: Sonarr only, one release for the whole season
+          example: false
+        episodeNumbers:
+          type: array
+          description: Sonarr only, the episodes of a single-episode release
+          items:
+            type: number
+        infoUrl:
+          type: string
+          example: https://moviesmod.fi/download-tron-1982-english-480p-720p-1080p/
+    ArrReleasesResponse:
+      type: object
+      properties:
+        service:
+          type: string
+          enum: [radarr, sonarr]
+        serviceName:
+          type: string
+          example: Radarr
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/ArrRelease'
     PageInfo:
       type: object
       properties:
@@ -7379,6 +7453,100 @@ paths:
       responses:
         '204':
           description: Successfully removed media item
+  /media/{mediaId}/releases:
+    get:
+      summary: Search releases
+      description: |
+        Asks the Radarr or Sonarr server that has the title for the releases its indexers offer, best first in Radarr's or Sonarr's own order. The search runs live and can take a minute.
+
+        Requires the `ADMIN` permission.
+      tags:
+        - media
+      parameters:
+        - in: path
+          name: mediaId
+          description: Media ID
+          required: true
+          example: '1'
+          schema:
+            type: string
+        - in: query
+          name: is4k
+          description: Search the 4K server (true) or the regular one (false)
+          required: false
+          example: false
+          schema:
+            type: boolean
+        - in: query
+          name: seasonNumber
+          description: The season to search. Required for a show.
+          required: false
+          example: 1
+          schema:
+            type: integer
+            minimum: 0
+      responses:
+        '200':
+          description: The releases found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ArrReleasesResponse'
+        '400':
+          description: A show was searched without a season number
+        '404':
+          description: The title is not in Radarr or Sonarr
+        '409':
+          description: The Radarr or Sonarr server that has the title is not configured
+        '500':
+          description: Radarr or Sonarr could not search
+  /media/{mediaId}/releases/grab:
+    post:
+      summary: Grab a release
+      description: |
+        Sends a release from a search to Radarr or Sonarr, which hands it to its download client. Radarr and Sonarr keep search results for 30 minutes.
+
+        Requires the `ADMIN` permission.
+      tags:
+        - media
+      parameters:
+        - in: path
+          name: mediaId
+          description: Media ID
+          required: true
+          example: '1'
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - guid
+                - indexerId
+              properties:
+                guid:
+                  type: string
+                  example: 3fbd3265c069d8db1d0e
+                indexerId:
+                  type: integer
+                  example: 1
+                is4k:
+                  type: boolean
+                  example: false
+      responses:
+        '204':
+          description: Radarr or Sonarr grabbed the release
+        '400':
+          description: Invalid request body
+        '404':
+          description: The release is no longer in the search results, or the title is not in Radarr or Sonarr
+        '409':
+          description: The Radarr or Sonarr server that has the title is not configured
+        '500':
+          description: Radarr or Sonarr could not grab the release
   /media/{mediaId}/{status}:
     post:
       summary: Update media status

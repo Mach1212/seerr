@@ -110,6 +110,8 @@ class RadarrAPI extends ServarrBase<{ movieId: number }> {
     }
   };
 
+  public getReleases = (movieId: number) => this.interactiveSearch({ movieId });
+
   public async getMovieByTmdbId(id: number): Promise<RadarrMovie> {
     let response: AxiosResponse<RadarrMovie[]>;
     try {

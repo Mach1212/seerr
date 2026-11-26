@@ -183,6 +183,10 @@ class SonarrAPI extends ServarrBase<{
     }
   }
 
+  public getReleases(seriesId: number, seasonNumber: number) {
+    return this.interactiveSearch({ seriesId, seasonNumber });
+  }
+
   public async getSeriesByTvdbId(id: number): Promise<SonarrSeries> {
     let response: AxiosResponse<SonarrSeries[]>;
     try {

@@ -1,7 +1,13 @@
 import ExternalAPI from '@server/api/externalapi';
+import type { ArrRelease } from '@server/interfaces/api/releaseInterfaces';
 import type { AvailableCacheIds } from '@server/lib/cache';
 import cacheManager from '@server/lib/cache';
 import { getSettings, type DVRSettings } from '@server/lib/settings';
+import {
+  RELEASE_REQUEST_TIMEOUT_MS,
+  toArrRelease,
+  type ServarrRelease,
+} from './release';
 
 export interface SystemStatus {
   version: string;
@@ -229,8 +235,27 @@ class ServarrBase<QueueItemAppendT> extends ExternalAPI {
     }
   };
 
+  public grabRelease = async (
+    release: Pick<ArrRelease, 'guid' | 'indexerId'>
+  ): Promise<void> => {
+    await this.axios.post('/release', release, {
+      timeout: RELEASE_REQUEST_TIMEOUT_MS,
+    });
+  };
+
   async refreshMonitoredDownloads(): Promise<void> {
     await this.runCommand('RefreshMonitoredDownloads', {});
+  }
+
+  protected async interactiveSearch(
+    params: { movieId: number } | { seriesId: number; seasonNumber: number }
+  ): Promise<ArrRelease[]> {
+    const response = await this.axios.get<ServarrRelease[]>('/release', {
+      params,
+      timeout: RELEASE_REQUEST_TIMEOUT_MS,
+    });
+
+    return response.data.map(toArrRelease);
   }
 
   protected async runCommand(
